@@ -1,14 +1,67 @@
-"""
-sudo apt-get update
-sudo apt-get install git cmake libpython3-dev python3-numpy
-git clone --recursive https://github.com/dusty-nv/jetson-inference
-cd jetson-inference
-mkdir build
-cd build
-cmake ../
-make j$(nproc)
-sudo make install
-sudo ldconfig
+import jetson.inference
+import jetson.utils
+import cv2
 
-"""
+class MobileNetSSD():
+    def __init__(self,path, threshold=0.5):
+        self.path = path
+        self.threshold = threshold
+        #creating the network
+        self.net = jetson.inference.detectNet(self.path, self.threshold)
+
+    def detect(self, img, display=False):
+        #convert the image to imageCuda format
+        imgCuda = jetson.utils.cudaFromNumpy(img)
+        detections = self.net.Detect(imgCuda, overlay="OVERLAY_NONE")
+
+        objects = []
+
+        for d in detections:
+
+            #class name
+            className = self.net.GetClassDescription(d.ClassID)
+            objects.append([className,d])
+
+            if display == True:
+                #coordinates
+                x1,y1,x2,y2 = int(d.Left),int(d.Top),int(d.Right),int(d.Bottom)
+                #center values
+                cy,cx = int(d.Center[0]), int(d.Center[1])
+
+                cv2.rectangle(img,(x1,y1),(x2,y2), (255,0,255),2)
+                
+                cv2.circle(img, (cx,cy), 5, (255,0,255),cv2.FILLED)
+                cv2.line(img,(x1,cy), (x2,cy), (255,0,255),1)
+                cv2.line(img,(cx,y1), (cx,y2), (255,0,255),1)
+
+                cv2.putText(img, className, (x1+5,y1+15), cv2.FONT_HERSHEY_DUPLEX, 0.75, (255,0,255),2)
+                cv2.putText(img, f"FPS: {int(self.net.GetNetworkFPS())}", (30,30), cv2.FONT_HERSHEY_DUPLEX, 1, (255,0,0),2)
+
+        return objects
+
+def main():
+    
+    #create webcam
+    cap = cv2.VideoCapture(0)
+    cap.set(3,640)
+    cap.set(4,480)
+
+    model = MobileNetSSD("ssd-mobilenet-v2", threshold=0.5)
+
+    while True:
+        success, img = cap.read()
+
+        objects = model.detect(img, display=True)
+
+        #convert the image tagged to a numpy image
+        #img = jetson.utils.cudaToNumpy(imgCuda)
+      
+
+        cv2.imshow("Video", img)
+        cv2.waitKey(1)
+
+
+if __name__ == "__main__":
+    main()
+
 
