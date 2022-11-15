@@ -13,11 +13,24 @@ model = mnssdm.MobileNetSSD("ssd-mobilenet-v2", threshold=0.5)
 while True:
     success, img = cap.read()
 
-    objects = model.detect(img, display=True)
+    if success:
+                
 
-    #convert the image tagged to a numpy image
-    #img = jetson.utils.cudaToNumpy(imgCuda)
-      
+        objects, img = model.detect(img, display=True)
 
-    cv2.imshow("Video", img)
-    cv2.waitKey(1)
+            
+        print(objects)
+        #convert the image tagged to a numpy image
+        #img = jetson.utils.cudaToNumpy(imgCuda)
+        
+
+        cv2.imshow("Video", img)
+        if cv2.waitKey(1) >= 0:
+            break
+
+    else:
+        print("hola")
+        break
+
+cap.release()
+cv2.destroyAllWindows()

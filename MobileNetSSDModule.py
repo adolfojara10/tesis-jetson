@@ -1,6 +1,7 @@
 import jetson.inference
 import jetson.utils
 import cv2
+import numpy as np
 
 class MobileNetSSD():
     def __init__(self,path, threshold=0.5):
@@ -9,8 +10,9 @@ class MobileNetSSD():
         #creating the network
         self.net = jetson.inference.detectNet(self.path, self.threshold)
 
-    def detect(self, img, display=False):
+    def detect(self, img, display=True):
         #convert the image to imageCuda format
+        img = np.array(img)
         imgCuda = jetson.utils.cudaFromNumpy(img)
         detections = self.net.Detect(imgCuda, overlay="OVERLAY_NONE")
 
@@ -19,7 +21,7 @@ class MobileNetSSD():
         for d in detections:
 
             #class name
-            className = self.net.GetClassDescription(d.ClassID)
+            className = self.net.GetClassDesc(d.ClassID)
             objects.append([className,d])
 
             if display == True:
@@ -35,14 +37,18 @@ class MobileNetSSD():
                 cv2.line(img,(cx,y1), (cx,y2), (255,0,255),1)
 
                 cv2.putText(img, className, (x1+5,y1+15), cv2.FONT_HERSHEY_DUPLEX, 0.75, (255,0,255),2)
-                cv2.putText(img, f"FPS: {int(self.net.GetNetworkFPS())}", (30,30), cv2.FONT_HERSHEY_DUPLEX, 1, (255,0,0),2)
+                #cv2.putText(img,f"FPS: " + int(self.net.GetNetworkFPS()), (30,30), cv2.FONT_HERSHEY_DUPLEX, 1, (255,0,0),2)
 
-        return objects
+        return objects, img
 
 def main():
     
     #create webcam
     cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("camera not opened")
+        exit()
     cap.set(3,640)
     cap.set(4,480)
 
@@ -51,17 +57,32 @@ def main():
     while True:
         success, img = cap.read()
 
-        objects = model.detect(img, display=True)
+        if success:
+                
 
-        #convert the image tagged to a numpy image
-        #img = jetson.utils.cudaToNumpy(imgCuda)
-      
+            objects, img = model.detect(img, display=True)
 
-        cv2.imshow("Video", img)
-        cv2.waitKey(1)
+            
+            print(objects)
+            #convert the image tagged to a numpy image
+            #img = jetson.utils.cudaToNumpy(imgCuda)
+        
+
+            cv2.imshow("Video", img)
+            if cv2.waitKey(1) >= 0:
+                break
+
+        else:
+            print("hola")
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
     main()
+
+    
 
 
