@@ -1,5 +1,5 @@
-import jetson.inference
-import jetson.utils
+import jetson_inference
+import jetson_utils
 import cv2
 import numpy as np
 
@@ -8,12 +8,12 @@ class MobileNetSSD():
         self.path = path
         self.threshold = threshold
         #creating the network
-        self.net = jetson.inference.detectNet(self.path, self.threshold)
+        self.net = jetson_inference.detectNet(self.path, self.threshold)
 
     def detect(self, img, display=True):
         #convert the image to imageCuda format
         img = np.array(img)
-        imgCuda = jetson.utils.cudaFromNumpy(img)
+        imgCuda = jetson_utils.cudaFromNumpy(img)
         detections = self.net.Detect(imgCuda, overlay="OVERLAY_NONE")
 
         objects = []
@@ -31,10 +31,10 @@ class MobileNetSSD():
                 cy,cx = int(d.Center[0]), int(d.Center[1])
 
                 cv2.rectangle(img,(x1,y1),(x2,y2), (255,0,255),2)
-                
+                """
                 cv2.circle(img, (cx,cy), 5, (255,0,255),cv2.FILLED)
                 cv2.line(img,(x1,cy), (x2,cy), (255,0,255),1)
-                cv2.line(img,(cx,y1), (cx,y2), (255,0,255),1)
+                cv2.line(img,(cx,y1), (cx,y2), (255,0,255),1)"""
 
                 cv2.putText(img, className, (x1+5,y1+15), cv2.FONT_HERSHEY_DUPLEX, 0.75, (255,0,255),2)
                 #cv2.putText(img,f"FPS: " + int(self.net.GetNetworkFPS()), (30,30), cv2.FONT_HERSHEY_DUPLEX, 1, (255,0,0),2)
